@@ -4,9 +4,22 @@
  */
 
 // Expense categories - fixed list for analytics
-export type ExpenseCategory = 'Stock' | 'Transport' | 'Loyer' | 'Salaire' | 'Internet' | 'Autre';
+export type ExpenseCategory =
+  | "Stock"
+  | "Transport"
+  | "Loyer"
+  | "Salaire"
+  | "Internet"
+  | "Autre";
 
-export const EXPENSE_CATEGORIES: ExpenseCategory[] = ['Stock', 'Transport', 'Loyer', 'Salaire', 'Internet', 'Autre'];
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
+  "Stock",
+  "Transport",
+  "Loyer",
+  "Salaire",
+  "Internet",
+  "Autre",
+];
 
 /**
  * Single product sale line item
@@ -29,20 +42,22 @@ export interface ExpenseLineItem {
 }
 
 /**
- * Transaction Entry (redesigned)
- * Users can record multiple transactions per day with categorized expenses
- * Supports backward compatibility with old format
+ * Transaction Entry
+ * Represents a single financial event (Sale or Expense)
  */
 export interface DailyEntry {
-  id: string; // Unique identifier for the entry
+  id: string;
   date: string; // ISO 8601 format: YYYY-MM-DD
-  saleItems: SaleLineItem[]; // Product-based sales
-  expenseItems: ExpenseLineItem[]; // Categorized expenses
-  timestamp?: number; // Optional: milliseconds since epoch for ordering within same day
-  // Backward compatibility fields (populated during migration from old format)
-  // Will be gradually removed as components migrate to new format
-  sales: number; // Total sales (calculated from saleItems or migrated from old format)
-  expenses: number; // Total expenses (calculated from expenseItems or migrated from old format)
+  timestamp: number; // For sorting
+  type: "SALE" | "EXPENSE";
+
+  // Specifics
+  productId?: string; // For SALE or EXPENSE (Stock)
+  quantity?: number; // For SALE or EXPENSE (Stock)
+  category?: ExpenseCategory; // For EXPENSE
+
+  // Financials
+  amount: number; // Total value (Revenue for Sale, Cost for Expense)
 }
 
 /**
@@ -78,58 +93,66 @@ export interface HealthScoreResult {
  * Validation utilities
  */
 
-export function isValidExpenseCategory(category: string): category is ExpenseCategory {
+export function isValidExpenseCategory(
+  category: string,
+): category is ExpenseCategory {
   return EXPENSE_CATEGORIES.includes(category as ExpenseCategory);
 }
 
 export function isValidSaleLineItem(item: unknown): item is SaleLineItem {
-  if (typeof item !== 'object' || item === null) return false;
+  if (typeof item !== "object" || item === null) return false;
   const obj = item as Record<string, unknown>;
   return (
-    typeof obj.productId === 'string' &&
-    typeof obj.quantity === 'number' &&
+    typeof obj.productId === "string" &&
+    typeof obj.quantity === "number" &&
     obj.quantity > 0 &&
-    typeof obj.total === 'number' &&
+    typeof obj.total === "number" &&
     obj.total > 0
   );
 }
 
 export function isValidExpenseLineItem(item: unknown): item is ExpenseLineItem {
-  if (typeof item !== 'object' || item === null) return false;
+  if (typeof item !== "object" || item === null) return false;
   const obj = item as Record<string, unknown>;
   return (
     isValidExpenseCategory(obj.category as string) &&
-    typeof obj.amount === 'number' &&
+    typeof obj.amount === "number" &&
     obj.amount > 0
   );
 }
 
 export function isValidDailyEntry(entry: unknown): entry is DailyEntry {
-  if (typeof entry !== 'object' || entry === null) return false;
+  if (typeof entry !== "object" || entry === null) return false;
   const obj = entry as Record<string, unknown>;
-  
-  const hasValidId = typeof obj.id === 'string' && obj.id.length > 0;
-  const hasValidDate = typeof obj.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(obj.date);
-  const hasValidSaleItems = Array.isArray(obj.saleItems) && obj.saleItems.every(isValidSaleLineItem);
-  const hasValidExpenseItems = Array.isArray(obj.expenseItems) && obj.expenseItems.every(isValidExpenseLineItem);
-  
-  return hasValidId && hasValidDate && hasValidSaleItems && hasValidExpenseItems;
+
+  const hasValidId = typeof obj.id === "string" && obj.id.length > 0;
+  const hasValidDate =
+    typeof obj.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(obj.date);
+  const hasValidSaleItems =
+    Array.isArray(obj.saleItems) && obj.saleItems.every(isValidSaleLineItem);
+  const hasValidExpenseItems =
+    Array.isArray(obj.expenseItems) &&
+    obj.expenseItems.every(isValidExpenseLineItem);
+
+  return (
+    hasValidId && hasValidDate && hasValidSaleItems && hasValidExpenseItems
+  );
 }
 
 export function isValidStockItem(item: unknown): item is StockItem {
-  if (typeof item !== 'object' || item === null) return false;
+  if (typeof item !== "object" || item === null) return false;
   const obj = item as Record<string, unknown>;
-  
+
   return (
-    typeof obj.id === 'string' &&
+    typeof obj.id === "string" &&
     obj.id.length > 0 &&
-    typeof obj.name === 'string' &&
+    typeof obj.name === "string" &&
     obj.name.length > 0 &&
-    typeof obj.quantity === 'number' &&
+    typeof obj.quantity === "number" &&
     obj.quantity >= 0 &&
-    typeof obj.threshold === 'number' &&
+    typeof obj.threshold === "number" &&
     obj.threshold >= 0 &&
-    typeof obj.totalSold === 'number' &&
+    typeof obj.totalSold === "number" &&
     obj.totalSold >= 0
   );
 }

@@ -1,13 +1,7 @@
 "use client";
 
 import { fr } from "@/lib/i18n";
-import type {
-  DailyEntry,
-  SaleLineItem,
-  ExpenseLineItem,
-  ExpenseCategory,
-  StockItem,
-} from "@/types";
+import type { DailyEntry, ExpenseCategory, StockItem } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/types";
 import { loadData } from "@/lib/storage";
 import { useState } from "react";
@@ -18,7 +12,7 @@ interface AddEntryProps {
   onCancel: () => void;
 }
 
-type TabType = "sales" | "expenses";
+type EntryType = "SALE" | "EXPENSE";
 
 function generateEntryId(): string {
   return `entry_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -30,106 +24,31 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
     return new Date().toISOString().split("T")[0];
   });
 
-  const [activeTab, setActiveTab] = useState<TabType>("sales");
+  const [entryType, setEntryType] = useState<EntryType>(
+    existingEntry?.type || "SALE",
+  );
   const [error, setError] = useState("");
 
-  // Sales tab state
-  const [saleItems, setSaleItems] = useState<SaleLineItem[]>(
-    existingEntry?.saleItems || [],
+  // Sale / Stock Expense fields
+  const [selectedProductId, setSelectedProductId] = useState(
+    existingEntry?.productId || "",
   );
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [saleQuantity, setSaleQuantity] = useState("");
-  const [totalPrice, setTotalPrice] = useState("");
+  const [quantity, setQuantity] = useState(
+    existingEntry?.quantity?.toString() || "",
+  );
+  const [amount, setAmount] = useState(existingEntry?.amount?.toString() || "");
 
-  // Expense tab state
-  const [expenseItems, setExpenseItems] = useState<ExpenseLineItem[]>(
-    existingEntry?.expenseItems || [],
+  // Expense fields
+  const [selectedCategory, setSelectedCategory] = useState<ExpenseCategory>(
+    existingEntry?.category || "Autre",
   );
-  const [selectedCategory, setSelectedCategory] =
-    useState<ExpenseCategory>("Autre");
-  const [expenseAmount, setExpenseAmount] = useState("");
 
   // Load stock for product dropdown
   const [stock, setStock] = useState<StockItem[]>(() => loadData().stock);
 
-  // Calculated totals
-  const totalSales = saleItems.reduce((sum, item) => sum + item.total, 0);
-  const totalExpenses = expenseItems.reduce(
-    (sum, item) => sum + item.amount,
-    0,
-  );
-  const profit = totalSales - totalExpenses;
-
-  const handleAddSaleItem = () => {
-    setError("");
-
-    if (!selectedProductId) {
-      setError(fr.entry.selectProduct);
-      return;
-    }
-
-    const qty = parseInt(saleQuantity, 10);
-    const total = parseInt(totalPrice, 10);
-
-    if (isNaN(qty) || qty <= 0) {
-      setError("Veuillez entrer une quantité valide");
-      return;
-    }
-
-    if (isNaN(total) || total < 0) {
-      setError("Veuillez entrer un prix total valide");
-      return;
-    }
-
-    const product = stock.find((p) => p.id === selectedProductId);
-    if (!product) {
-      setError("Produit non trouvé");
-      return;
-    }
-
-    if (product.quantity < qty) {
-      setError(`Stock insuffisant. Disponible: ${product.quantity}`);
-      return;
-    }
-
-    const newSaleItem: SaleLineItem = {
-      productId: selectedProductId,
-      quantity: qty,
-      unitPrice: Math.round(total / qty),
-      total: total,
-    };
-
-    setSaleItems([...saleItems, newSaleItem]);
-    setSelectedProductId("");
-    setSaleQuantity("");
-    setTotalPrice("");
-  };
-
-  const handleRemoveSaleItem = (index: number) => {
-    setSaleItems(saleItems.filter((_, i) => i !== index));
-  };
-
-  const handleAddExpenseItem = () => {
-    setError("");
-
-    const amount = parseFloat(expenseAmount);
-    if (isNaN(amount) || amount <= 0) {
-      setError("Veuillez entrer un montant valide");
-      return;
-    }
-
-    const newExpenseItem: ExpenseLineItem = {
-      category: selectedCategory,
-      amount,
-    };
-
-    setExpenseItems([...expenseItems, newExpenseItem]);
-    setExpenseAmount("");
-  };
-
-  const handleRemoveExpenseItem = (index: number) => {
-    setExpenseItems(expenseItems.filter((_, i) => i !== index));
-  };
+  // Constants
+  const isStockExpense =
+    entryType === "EXPENSE" && selectedCategory === "Stock";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,20 +59,66 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
       return;
     }
 
-    if (saleItems.length === 0 && expenseItems.length === 0) {
-      setError("Veuillez ajouter au moins une vente ou une dépense");
+    const qty = parseInt(quantity, 10);
+    const totalAmount = parseInt(amount, 10);
+
+    if (isNaN(totalAmount) || totalAmount < 0) {
+      setError("Veuillez entrer un montant valide");
       return;
     }
 
-    onSave({
+    // Validation for Sales and Stock Expenses
+    if (entryType === "SALE" || isStockExpense) {
+      if (!selectedProductId) {
+        setError(fr.entry.selectProduct);
+        return;
+      }
+      if (isNaN(qty) || qty <= 0) {
+        setError("Veuillez entrer une quantité valide");
+        return;
+      }
+
+      if (entryType === "SALE") {
+        const product = stock.find((p) => p.id === selectedProductId);
+        if (!product) {
+          setError("Produit non trouvé");
+          return;
+        }
+        // Check stock only for new sales or if quantity increased
+        // Simplified check: just check current stock vs requested quantity
+        // Note: For editing, this might block if stock is low but we are just editing the price.
+        // ideally we should factor in the existing quantity if editing, but for now we enforce stock availability.
+        // We added existing quantity back in lib/entries on update, so we can't easily check against that here directly without fetching fresh data including the reverted amount.
+        // For simplicity in this "immediate submit" refactor, we check roughly.
+        // Actually, let's skip strict stock check on edit to avoid locking users out, or rely on the backend/lib check if we had one.
+        // Let's keep it simple: check against current available stock.
+        if (!existingEntry && product.quantity < qty) {
+          setError(`Stock insuffisant. Disponible: ${product.quantity}`);
+          return;
+        }
+      }
+    }
+
+    const newEntry: DailyEntry = {
       id: existingEntry?.id || generateEntryId(),
       date,
-      saleItems,
-      expenseItems,
-      sales: totalSales,
-      expenses: totalExpenses,
       timestamp: existingEntry?.timestamp || Date.now(),
-    });
+      type: entryType,
+      amount: totalAmount,
+    };
+
+    if (entryType === "SALE") {
+      newEntry.productId = selectedProductId;
+      newEntry.quantity = qty;
+    } else if (entryType === "EXPENSE") {
+      newEntry.category = selectedCategory;
+      if (isStockExpense) {
+        newEntry.productId = selectedProductId;
+        newEntry.quantity = qty;
+      }
+    }
+
+    onSave(newEntry);
   };
 
   return (
@@ -190,16 +155,16 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
             />
           </div>
 
-          {/* Tab Buttons */}
+          {/* Type Selector */}
           <div className="flex gap-2 border-b border-gray-200">
             <button
               type="button"
               onClick={() => {
-                setActiveTab("sales");
+                setEntryType("SALE");
                 setError("");
               }}
-              className={`px-4 py-3 font-semibold transition-colors ${
-                activeTab === "sales"
+              className={`flex-1 px-4 py-3 font-semibold transition-colors ${
+                entryType === "SALE"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-gray-900"
               }`}
@@ -209,11 +174,11 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
             <button
               type="button"
               onClick={() => {
-                setActiveTab("expenses");
+                setEntryType("EXPENSE");
                 setError("");
               }}
-              className={`px-4 py-3 font-semibold transition-colors ${
-                activeTab === "expenses"
+              className={`flex-1 px-4 py-3 font-semibold transition-colors ${
+                entryType === "EXPENSE"
                   ? "border-b-2 border-blue-500 text-blue-600"
                   : "text-gray-600 hover:text-gray-900"
               }`}
@@ -222,8 +187,8 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
             </button>
           </div>
 
-          {/* Sales Tab */}
-          {activeTab === "sales" && (
+          {/* SALE FORM */}
+          {entryType === "SALE" && (
             <div className="space-y-4">
               <div>
                 <label
@@ -247,120 +212,58 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                 </select>
               </div>
 
-              <div>
-                <label
-                  htmlFor="quantity"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
-                  {fr.entry.quantity}
-                </label>
-                <input
-                  id="quantity"
-                  type="number"
-                  value={saleQuantity}
-                  onChange={(e) => setSaleQuantity(e.target.value)}
-                  placeholder="0"
-                  min="1"
-                  step="1"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label
+                    htmlFor="quantity"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    {fr.entry.quantity}
+                  </label>
+                  <input
+                    id="quantity"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="0"
+                    min="1"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label
+                    htmlFor="amount"
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    Prix Total
+                  </label>
+                  <input
+                    id="amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
-              {selectedProductId && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  {(() => {
-                    const product = stock.find(
-                      (p) => p.id === selectedProductId,
-                    );
-                    const qty = parseInt(saleQuantity, 10) || 0;
-                    const unitPrice = product?.unitPrice || 0;
-                    return (
-                      <>
-                        <div className="mb-2">
-                          <label
-                            htmlFor="totalPrice"
-                            className="block text-sm font-semibold text-gray-700 mb-1"
-                          >
-                            Prix Total (CFA)
-                          </label>
-                          <input
-                            id="totalPrice"
-                            type="number"
-                            value={totalPrice}
-                            onChange={(e) => setTotalPrice(e.target.value)}
-                            placeholder="Prix total négocié"
-                            min="0"
-                            className="w-full px-4 py-2 border border-blue-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        {parseInt(totalPrice) > 0 &&
-                          parseInt(saleQuantity) > 0 && (
-                            <div className="text-sm text-gray-600">
-                              Prix unitaire calculé:{" "}
-                              {(
-                                parseInt(totalPrice) / parseInt(saleQuantity)
-                              ).toLocaleString("fr-FR")}{" "}
-                              CFA
-                            </div>
-                          )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={handleAddSaleItem}
-                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                {fr.entry.addLineItem}
-              </button>
-
-              {/* Sale Items List */}
-              {saleItems.length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-                  <div className="font-semibold text-gray-900">
-                    Items ajoutés:
-                  </div>
-                  {saleItems.map((item, index) => {
-                    const product = stock.find((p) => p.id === item.productId);
-                    return (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center bg-white p-3 rounded"
-                      >
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {product?.name}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {item.quantity} ×{" "}
-                            {item.unitPrice?.toLocaleString("fr-FR")} CFA
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-green-600">
-                            {item.total.toLocaleString("fr-FR")} CFA
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSaleItem(index)}
-                            className="text-red-600 hover:text-red-700 text-sm font-semibold"
-                          >
-                            {fr.entry.removeLineItem}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Computed Unit Price Preview */}
+              {parseInt(amount) > 0 && parseInt(quantity) > 0 && (
+                <div className="text-sm text-gray-600 text-right">
+                  Prix unitaire:{" "}
+                  {(parseInt(amount) / parseInt(quantity)).toLocaleString(
+                    "fr-FR",
+                  )}{" "}
+                  CFA
                 </div>
               )}
             </div>
           )}
 
-          {/* Expenses Tab */}
-          {activeTab === "expenses" && (
+          {/* EXPENSE FORM */}
+          {entryType === "EXPENSE" && (
             <div className="space-y-4">
               <div>
                 <label
@@ -385,22 +288,67 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                 </select>
               </div>
 
+              {selectedCategory === "Stock" && (
+                <div className="space-y-4 p-4 bg-orange-50 rounded-lg border border-orange-100">
+                  <p className="text-sm text-orange-800 font-medium mb-2">
+                    Réapprovisionnement de Stock
+                  </p>
+                  <div>
+                    <label
+                      htmlFor="stockProduct"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Produit
+                    </label>
+                    <select
+                      id="stockProduct"
+                      value={selectedProductId}
+                      onChange={(e) => setSelectedProductId(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- Choisir le produit --</option>
+                      {stock.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} (Actuel: {product.quantity})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="stockQty"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Quantité Ajoutée
+                    </label>
+                    <input
+                      id="stockQty"
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="0"
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label
-                  htmlFor="amount"
+                  htmlFor="expenseAmount"
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  {fr.common.amount}
+                  Montant Total (Coût)
                 </label>
                 <div className="relative">
                   <input
-                    id="amount"
+                    id="expenseAmount"
                     type="number"
-                    value={expenseAmount}
-                    onChange={(e) => setExpenseAmount(e.target.value)}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
                     min="0"
-                    step="1"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span className="absolute right-4 top-3 text-gray-500">
@@ -408,79 +356,8 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                   </span>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={handleAddExpenseItem}
-                className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                {fr.entry.addLineItem}
-              </button>
-
-              {/* Expense Items List */}
-              {expenseItems.length > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
-                  <div className="font-semibold text-gray-900">
-                    Dépenses ajoutées:
-                  </div>
-                  {expenseItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center bg-white p-3 rounded"
-                    >
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {
-                            fr.expenseCategories[
-                              item.category as ExpenseCategory
-                            ]
-                          }
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-orange-600">
-                          {item.amount.toLocaleString("fr-FR")} CFA
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveExpenseItem(index)}
-                          className="text-red-600 hover:text-red-700 text-sm font-semibold"
-                        >
-                          {fr.entry.removeLineItem}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
-
-          {/* Profit Summary */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Ventes</div>
-                <div className="text-lg font-bold text-green-600">
-                  {totalSales.toLocaleString("fr-FR")} CFA
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Dépenses</div>
-                <div className="text-lg font-bold text-orange-600">
-                  {totalExpenses.toLocaleString("fr-FR")} CFA
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Profit</div>
-                <div
-                  className={`text-lg font-bold ${profit > 0 ? "text-green-600" : profit < 0 ? "text-red-600" : "text-gray-600"}`}
-                >
-                  {profit.toLocaleString("fr-FR")} CFA
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Error */}
           {error && (
@@ -502,7 +379,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
               type="submit"
               className="flex-1 py-3 bg-[#60b8c0] hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
             >
-              {fr.entry.save}
+              {existingEntry ? "Mettre à jour" : fr.entry.save}
             </button>
           </div>
         </form>

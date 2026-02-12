@@ -24,7 +24,7 @@ export function StockManagement({ onBack }: StockManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState("0");
   const [threshold, setThreshold] = useState("");
   const [error, setError] = useState("");
 
@@ -42,8 +42,8 @@ export function StockManagement({ onBack }: StockManagementProps) {
       return;
     }
 
-    const qty = parseInt(quantity, 10);
-    const thresh = parseInt(threshold, 10);
+    const qty = quantity === "" ? 0 : parseInt(quantity, 10);
+    const thresh = threshold === "" ? 0 : parseInt(threshold, 10);
 
     if (isNaN(qty) || isNaN(thresh) || qty < 0 || thresh < 0) {
       setError("Veuillez entrer des nombres valides");

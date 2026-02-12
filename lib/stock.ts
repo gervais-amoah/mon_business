@@ -26,30 +26,35 @@ export function deductStockFromSale(
  * Apply all sales from an entry to stock items
  * Updates both quantity (decrements) and totalSold (increments)
  */
+/**
+ * Apply a sale entry to stock items
+ * Updates both quantity (decrements) and totalSold (increments)
+ */
 export function applyEntryToStock(
   stockItems: StockItem[],
-  saleItems: SaleLineItem[],
+  entry: DailyEntry,
 ): StockItem[] {
+  if (entry.type !== "SALE" || !entry.productId || !entry.quantity) {
+    return stockItems;
+  }
+
   const updatedItems = [...stockItems];
+  const itemIndex = updatedItems.findIndex((s) => s.id === entry.productId);
 
-  saleItems.forEach((sale) => {
-    const itemIndex = updatedItems.findIndex((s) => s.id === sale.productId);
-    if (itemIndex >= 0) {
-      const currentRevenue =
-        updatedItems[itemIndex].totalSold *
-        (updatedItems[itemIndex].unitPrice || 0);
-      const newRevenue = currentRevenue + sale.total;
-      const newTotalSold = updatedItems[itemIndex].totalSold + sale.quantity;
-      const newAveragePrice = newTotalSold > 0 ? newRevenue / newTotalSold : 0;
+  if (itemIndex >= 0) {
+    const item = updatedItems[itemIndex];
+    const currentRevenue = item.totalSold * (item.unitPrice || 0);
+    const newRevenue = currentRevenue + entry.amount;
+    const newTotalSold = item.totalSold + entry.quantity;
+    const newAveragePrice = newTotalSold > 0 ? newRevenue / newTotalSold : 0;
 
-      updatedItems[itemIndex] = {
-        ...updatedItems[itemIndex],
-        quantity: Math.max(0, updatedItems[itemIndex].quantity - sale.quantity),
-        totalSold: newTotalSold,
-        unitPrice: Math.round(newAveragePrice),
-      };
-    }
-  });
+    updatedItems[itemIndex] = {
+      ...item,
+      quantity: Math.max(0, item.quantity - entry.quantity),
+      totalSold: newTotalSold,
+      unitPrice: Math.round(newAveragePrice),
+    };
+  }
 
   return updatedItems;
 }
@@ -125,13 +130,13 @@ export function getTopRevenueProducts(
   const productRevenue: Record<string, { revenue: number; units: number }> = {};
 
   entries.forEach((entry) => {
-    entry.saleItems.forEach((sale) => {
-      if (!productRevenue[sale.productId]) {
-        productRevenue[sale.productId] = { revenue: 0, units: 0 };
+    if (entry.type === "SALE" && entry.productId && entry.quantity) {
+      if (!productRevenue[entry.productId]) {
+        productRevenue[entry.productId] = { revenue: 0, units: 0 };
       }
-      productRevenue[sale.productId].revenue += sale.total;
-      productRevenue[sale.productId].units += sale.quantity;
-    });
+      productRevenue[entry.productId].revenue += entry.amount;
+      productRevenue[entry.productId].units += entry.quantity;
+    }
   });
 
   return stockItems
