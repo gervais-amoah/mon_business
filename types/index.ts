@@ -99,28 +99,6 @@ export function isValidExpenseCategory(
   return EXPENSE_CATEGORIES.includes(category as ExpenseCategory);
 }
 
-export function isValidSaleLineItem(item: unknown): item is SaleLineItem {
-  if (typeof item !== "object" || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    typeof obj.productId === "string" &&
-    typeof obj.quantity === "number" &&
-    obj.quantity > 0 &&
-    typeof obj.total === "number" &&
-    obj.total > 0
-  );
-}
-
-export function isValidExpenseLineItem(item: unknown): item is ExpenseLineItem {
-  if (typeof item !== "object" || item === null) return false;
-  const obj = item as Record<string, unknown>;
-  return (
-    isValidExpenseCategory(obj.category as string) &&
-    typeof obj.amount === "number" &&
-    obj.amount > 0
-  );
-}
-
 export function isValidDailyEntry(entry: unknown): entry is DailyEntry {
   if (typeof entry !== "object" || entry === null) return false;
   const obj = entry as Record<string, unknown>;
@@ -128,14 +106,23 @@ export function isValidDailyEntry(entry: unknown): entry is DailyEntry {
   const hasValidId = typeof obj.id === "string" && obj.id.length > 0;
   const hasValidDate =
     typeof obj.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(obj.date);
-  const hasValidSaleItems =
-    Array.isArray(obj.saleItems) && obj.saleItems.every(isValidSaleLineItem);
-  const hasValidExpenseItems =
-    Array.isArray(obj.expenseItems) &&
-    obj.expenseItems.every(isValidExpenseLineItem);
+
+  const isValidType = obj.type === "SALE" || obj.type === "EXPENSE";
+  const hasValidAmount = typeof obj.amount === "number" && obj.amount >= 0;
+
+  // Optional fields checks
+  const hasValidCategory =
+    !obj.category || isValidExpenseCategory(obj.category as string);
+  const hasValidQuantity =
+    !obj.quantity || (typeof obj.quantity === "number" && obj.quantity >= 0);
 
   return (
-    hasValidId && hasValidDate && hasValidSaleItems && hasValidExpenseItems
+    hasValidId &&
+    hasValidDate &&
+    isValidType &&
+    hasValidAmount &&
+    hasValidCategory &&
+    hasValidQuantity
   );
 }
 
@@ -152,7 +139,7 @@ export function isValidStockItem(item: unknown): item is StockItem {
     obj.quantity >= 0 &&
     typeof obj.threshold === "number" &&
     obj.threshold >= 0 &&
-    typeof obj.totalSold === "number" &&
-    obj.totalSold >= 0
+    (obj.totalSold === undefined ||
+      (typeof obj.totalSold === "number" && obj.totalSold >= 0))
   );
 }
