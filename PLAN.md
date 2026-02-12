@@ -25,59 +25,59 @@ Current system lacks inventory tracking depth and expense insights:
 
 ### Phase 1: Data Model & Types
 
-- [ ] Update `StockItem` type: add `totalSold: number` field (tracks cumulative units sold)
-- [ ] Create new types:
-  - [ ] `ExpenseCategory` enum: 'Stock' | 'Transport' | 'Loyer' | 'Salaire' | 'Internet' | 'Autre'
-  - [ ] `SaleLineItem`: { productId, quantity, unitPrice?, total }
-  - [ ] `ExpenseLineItem`: { category, amount }
-  - [ ] Update `DailyEntry`: remove generic `sales`/`expenses`, add `saleItems[]` & `expenseItems[]`
-- [ ] Add validation utilities for new types
+- [x] Update `StockItem` type: add `totalSold: number` field (tracks cumulative units sold)
+- [x] Create new types:
+  - [x] `ExpenseCategory` enum: 'Stock' | 'Transport' | 'Loyer' | 'Salaire' | 'Internet' | 'Autre'
+  - [x] `SaleLineItem`: { productId, quantity, unitPrice?, total }
+  - [x] `ExpenseLineItem`: { category, amount }
+  - [x] Update `DailyEntry`: remove generic `sales`/`expenses`, add `saleItems[]` & `expenseItems[]`
+- [x] Add validation utilities for new types
 
 ### Phase 2: Localization (i18n)
 
-- [ ] Add French translations for:
-  - [ ] Expense category names (Stock, Transport, Loyer, Salaire, Internet, Autre)
-  - [ ] UI labels: "Ajouter une vente", "Ajouter une dépense", "Catégorie de dépense"
-  - [ ] Analytics page: "Analyse des dépenses", "Produits les plus vendus"
+- [x] Add French translations for:
+  - [x] Expense category names (Stock, Transport, Loyer, Salaire, Internet, Autre)
+  - [x] UI labels: "Ajouter une vente", "Ajouter une dépense", "Catégorie de dépense"
+  - [x] Analytics page: "Analyse des dépenses", "Produits les plus vendus"
 
 ### Phase 3: Core Logic Updates
 
-- [ ] Create `lib/expenses.ts`:
-  - [ ] Function to sum expenses by category (for pie chart)
-  - [ ] Function to format category breakdown (list of categories + totals)
-- [ ] Create `lib/stock.ts`:
-  - [ ] Function to update stock when entry is saved (decrement by quantity sold)
-  - [ ] Function to get top-selling products (sort by totalSold desc)
-  - [ ] Function to detect low-stock items for alerts
-- [ ] Update `lib/profit.ts`:
-  - [ ] Modify getTodayProfit/getMonthlyProfit to work with new `saleItems[]` structure
-  - [ ] Ensure profit calculation still works: sum all sales - sum all expenses by category
+- [x] Create `lib/expenses.ts`:
+  - [x] Function to sum expenses by category (for pie chart)
+  - [x] Function to format category breakdown (list of categories + totals)
+- [x] Create `lib/stock.ts`:
+  - [x] Function to update stock when entry is saved (decrement by quantity sold)
+  - [x] Function to get top-selling products (sort by totalSold desc)
+  - [x] Function to detect low-stock items for alerts
+- [x] Update `lib/profit.ts`:
+  - [x] Modify getTodayProfit/getMonthlyProfit to work with new `saleItems[]` structure
+  - [x] Ensure profit calculation still works: sum all sales - sum all expenses by category
 
 ### Phase 4: Storage & Migration
 
-- [ ] Update `lib/storage.ts`:
-  - [ ] Add validation for new DailyEntry structure
-  - [ ] Add data migration logic (convert old simple sales/expenses to new structure)
-  - [ ] Backward compatibility: handle both old & new formats on load
-- [ ] Test migration with sample data
+- [x] Update `lib/storage.ts`:
+  - [x] Add validation for new DailyEntry structure
+  - [x] Add data migration logic (convert old simple sales/expenses to new structure)
+  - [x] Backward compatibility: handle both old & new formats on load
+- [x] Test migration with sample data
 
 ### Phase 5: AddEntry Component Redesign
 
-- [ ] Refactor AddEntry.tsx:
-  - [ ] Add tab/accordion system: "Vente" | "Dépense"
-  - [ ] **Sales Tab**:
-    - [ ] Dropdown to select product from stock
-    - [ ] Input field for quantity
-    - [ ] Display unit price (if available) & calculated total
-    - [ ] "Add Line Item" button to stack multiple products
-    - [ ] Show list of selected products with ability to remove
-  - [ ] **Expense Tab**:
-    - [ ] Dropdown/buttons for expense category (6 predefined)
-    - [ ] Input field for amount
-    - [ ] "Add Line Item" button to stack multiple expenses
-    - [ ] Show list of added expenses with ability to remove
-  - [ ] Total profit calculation: sum(sales) - sum(expenses)
-  - [ ] On save: auto-decrement stock for each product sold
+- [x] Refactor AddEntry.tsx:
+  - [x] Add tab/accordion system: "Vente" | "Dépense"
+  - [x] **Sales Tab**:
+    - [x] Dropdown to select product from stock
+    - [x] Input field for quantity
+    - [x] Display unit price (if available) & calculated total
+    - [x] "Add Line Item" button to stack multiple products
+    - [x] Show list of selected products with ability to remove
+  - [x] **Expense Tab**:
+    - [x] Dropdown/buttons for expense category (6 predefined)
+    - [x] Input field for amount
+    - [x] "Add Line Item" button to stack multiple expenses
+    - [x] Show list of added expenses with ability to remove
+  - [x] Total profit calculation: sum(sales) - sum(expenses)
+  - [x] On save: auto-decrement stock for each product sold
 
 ### Phase 6: StockManagement Updates
 
