@@ -111,6 +111,13 @@ export const fr = {
     importError: 'Impossible de sauvegarder les données',
     fileReadError: 'Erreur lors de la lecture du fichier',
     invalidFormat: 'Format de fichier invalide',
+    clearDataTitle: '🗑️ Supprimer toutes les données',
+    clearDataDescription:
+      'Ceci supprimera définitivement toutes vos données (entrées, stock, paramètres). Cette action ne peut pas être annulée.',
+    clearDataButton: 'Supprimer les données',
+    clearDataConfirm:
+      'Êtes-vous absolument sûr ? Cette action va supprimer TOUTES vos données de manière irréversible.',
+    clearDataSuccess: '✓ Toutes les données ont été supprimées',
   },
 
   // Common

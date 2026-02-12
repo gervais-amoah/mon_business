@@ -16,12 +16,16 @@ export function calculateProfit(sales: number, expenses: number): number {
 
 /**
  * Get today's profit
+ * Sums ALL entries from today (supports multiple transactions per day)
  */
 export function getTodayProfit(entries: DailyEntry[]): number {
   const today = new Date().toISOString().split("T")[0];
-  const todayEntry = entries.find((e) => e.date === today);
-  if (!todayEntry) return 0;
-  return calculateProfit(todayEntry.sales, todayEntry.expenses);
+  const todayEntries = entries.filter((e) => e.date === today);
+  
+  const totalSales = todayEntries.reduce((sum, e) => sum + e.sales, 0);
+  const totalExpenses = todayEntries.reduce((sum, e) => sum + e.expenses, 0);
+  
+  return calculateProfit(totalSales, totalExpenses);
 }
 
 /**

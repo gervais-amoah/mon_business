@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { BusinessSettings, DailyEntry } from '@/types';
 import { loadData } from '@/lib/storage';
 import {
@@ -24,13 +24,29 @@ interface DashboardProps {
 }
 
 export function Dashboard({ settings, onNavigate }: DashboardProps) {
-  // ✅ Load once during initialization
-  const [entries, setEntries] = useState<DailyEntry[]>(() => {
-    const data = loadData();
-    return data.entries;
-  });
-
+  // Initialize with empty array, load in useEffect
+  const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [showAddEntry, setShowAddEntry] = useState(false);
+
+  // Load entries on mount and whenever page becomes visible
+  useEffect(() => {
+    const loadEntries = () => {
+      const data = loadData();
+      setEntries(data.entries);
+    };
+
+    loadEntries();
+
+    // Also refresh when page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadEntries();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   // ✅ Derived values (no state, no effects)
   const todayProfit = getTodayProfit(entries);

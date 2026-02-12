@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { loadData, saveData } from '@/lib/storage';
+import { loadData, saveData, clearData } from '@/lib/storage';
 import type { BusinessData } from '@/types';
 import { fr } from '@/lib/i18n';
 
@@ -58,6 +58,19 @@ export function ExportImport({ onBack }: ExportImportProps) {
     fileInputRef.current?.click();
   };
 
+  const handleClearData = () => {
+    const confirmed = window.confirm(fr.settings.clearDataConfirm);
+    if (!confirmed) return;
+
+    if (clearData()) {
+      setMessageType('success');
+      setMessage(fr.settings.clearDataSuccess);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    }
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -107,7 +120,7 @@ export function ExportImport({ onBack }: ExportImportProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="h-[calc(100dvh-90px)] flex flex-col bg-white">
       {/* Header */}
       <div className="bg-linear-to-b from-blue-50 to-white px-6 pt-6 pb-8 flex items-center gap-4">
         {/* <button onClick={onBack} className="text-2xl">
@@ -122,7 +135,10 @@ export function ExportImport({ onBack }: ExportImportProps) {
       </div>
 
       {/* Content */}
-      <div className="px-6 space-y-6">
+      <div
+        className="px-6 space-y-6 pb-3 overflow-auto"
+        style={{ overflow: 'auto' }}
+      >
         {/* Message */}
         {message && (
           <div
@@ -172,6 +188,22 @@ export function ExportImport({ onBack }: ExportImportProps) {
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-colors"
           >
             {fr.settings.importData}
+          </button>
+        </div>
+
+        {/* Clear Data Section - Destructive action */}
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 space-y-4">
+          <h2 className="font-semibold text-gray-900 text-lg flex items-center gap-2">
+            {fr.settings.clearDataTitle}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {fr.settings.clearDataDescription}
+          </p>
+          <button
+            onClick={handleClearData}
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors"
+          >
+            {fr.settings.clearDataButton}
           </button>
         </div>
 
