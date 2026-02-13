@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MonBusiness",
   description:
-    "Suivez vos profits, dépenses et stocks en temps réel avec MonBusiness Togo. L'application 100% adaptée aux entrepreneurs et petits commerçants.",
+    "Suivez vos profits, dépenses et stocks en temps réel avec MonBusiness. L'application 100% adaptée aux entrepreneurs et petits commerçants.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
