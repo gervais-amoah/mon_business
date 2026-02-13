@@ -263,7 +263,7 @@ export function Dashboard({ settings, onNavigate }: DashboardProps) {
               onClick={() => onNavigate("analytics")}
               className="text-xs font-semibold text-indigo-700 hover:underline"
             >
-              {fr.dashboard.analyticsButton}
+              {fr.dashboard.viewAll}
             </button>
           </div>
           <div className="space-y-2">
@@ -282,12 +282,12 @@ export function Dashboard({ settings, onNavigate }: DashboardProps) {
             ))}
           </div>
           {/* View Analytics Button */}
-          <button
+          {/* <button
             onClick={() => onNavigate("analytics")}
             className="w-full mt-3 py-2 text-xs font-semibold text-indigo-700 bg-white/60 hover:bg-white/80 rounded transition-colors text-center"
           >
             {fr.dashboard.viewAll} {fr.dashboard.analyticsButton}
-          </button>
+          </button> */}
         </div>
       )}
 
