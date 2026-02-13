@@ -1,10 +1,15 @@
 import { formatExpenseBreakdown } from "@/lib/expenses";
 import { fr } from "@/lib/i18n";
+import {
+  calculateProductPerformance,
+  getPerformanceCategoryDisplay,
+} from "@/lib/productPerformance";
 import { getTopRevenueProducts } from "@/lib/stock";
 import { loadData } from "@/lib/storage";
 import type { DailyEntry, StockItem } from "@/types";
+import { ProductPerformance } from "@/types/performance";
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -23,7 +28,11 @@ export function Analytics({ onBack }: AnalyticsProps) {
 
   const [filter, setFilter] = useState<TimeFilter>("month");
 
-  // Remove expenseData and topProducts from state entirely
+  const [performanceSortField, setPerformanceSortField] =
+    useState<keyof ProductPerformance>("performanceScore");
+  const [performanceSortDirection, setPerformanceSortDirection] = useState<
+    "asc" | "desc"
+  >("desc");
 
   // Filter entries based on selected time range
   const now = new Date();
@@ -46,6 +55,63 @@ export function Analytics({ onBack }: AnalyticsProps) {
     }
     return true; // 'all'
   });
+
+  // Calculate product performance
+  const productPerformance = useMemo(() => {
+    return calculateProductPerformance({
+      entries: filteredEntries,
+      stockItems: stock,
+      daysToAnalyze:
+        filter === "today"
+          ? 1
+          : filter === "week"
+            ? 7
+            : filter === "month"
+              ? 30
+              : 365,
+    });
+  }, [filteredEntries, stock, filter]);
+
+  // Sort performance data
+  const sortedPerformance = useMemo(() => {
+    return [...productPerformance.products].sort((a, b) => {
+      const aVal = a[performanceSortField];
+      const bVal = b[performanceSortField];
+
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return performanceSortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+  }, [productPerformance, performanceSortField, performanceSortDirection]);
+
+  const handlePerformanceSort = (field: keyof ProductPerformance) => {
+    if (field === performanceSortField) {
+      setPerformanceSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setPerformanceSortField(field);
+      setPerformanceSortDirection("desc");
+    }
+  };
+
+  const getPerformanceColor = (score: number) => {
+    if (score >= 80) return "text-green-700 bg-green-50";
+    if (score >= 60) return "text-blue-700 bg-blue-50";
+    if (score >= 40) return "text-yellow-700 bg-yellow-50";
+    return "text-red-700 bg-red-50";
+  };
+
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("fr-FR") + " FCFA";
+  };
+
+  const formatPercent = (value: number) => {
+    return value.toFixed(1) + "%";
+  };
+
+  const formatNumber = (value: number) => {
+    return value.toLocaleString("fr-FR");
+  };
 
   // Calculate these directly, not in useEffect
   const expenseData = formatExpenseBreakdown(filteredEntries);
@@ -75,7 +141,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-white pb-18">
+    <div className="h-dvh flex flex-col bg-white pb-18 mb-6">
       {/* Header */}
       <div className="bg-white px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 z-10">
         <div className="flex items-center mb-4">
@@ -108,7 +174,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
               }`}
             >
               {f === "today" && fr.analytics.today}
-              {f === "week" && "7J"}
+              {f === "week" && "7 jours"}
               {f === "month" && fr.analytics.thisMonth}
               {f === "all" && fr.analytics.allTime}
             </button>
@@ -117,10 +183,421 @@ export function Analytics({ onBack }: AnalyticsProps) {
       </div>
 
       <div className="flex-1 pb-4 overflow-auto px-6 space-y-6">
+        {/* Performance Summary Cards */}
+        {productPerformance.products.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">
+                Chiffre d&apos;affaires
+              </div>
+              <div className="text-lg font-bold text-gray-900">
+                {formatCurrency(productPerformance.summary.totalRevenue)}
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">Profit estimé</div>
+              <div
+                className={`text-lg font-bold ${productPerformance.summary.totalProfit > 0 ? "text-green-600" : "text-red-500"}`}
+              >
+                {formatCurrency(productPerformance.summary.totalProfit)}
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">Marge moyenne</div>
+              <div className="text-lg font-bold text-blue-600">
+                {formatPercent(productPerformance.summary.averageMargin)}
+              </div>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">Meilleur score</div>
+              <div className="text-lg font-bold text-purple-600">
+                {productPerformance.summary.bestByScore?.performanceScore || 0}
+              </div>
+              <div className="text-xs text-gray-500 truncate">
+                {productPerformance.summary.bestByScore?.productName}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <div className="flex items-center gap-2 mb-4 md:mb-6">
+            <h2 className="font-bold text-gray-800">
+              Performance détaillée des produits
+            </h2>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {productPerformance.products.map((product) => (
+              <div
+                key={product.productId}
+                className="py-4 border-b border-gray-300"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">
+                      {product.productName}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-400">
+                        #{product.rankByRevenue}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).color
+                        }`}
+                      >
+                        {
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).icon
+                        }{" "}
+                        {
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).label
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getPerformanceColor(product.performanceScore)}`}
+                  >
+                    {product.performanceScore}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">
+                      Chiffre d&apos;affaires
+                    </p>
+                    <p className="font-medium text-gray-900">
+                      {formatCurrency(product.totalRevenue)}
+                    </p>
+                    {/* Show projected if there's unrealized value */}
+                    {product.unrealizedValue > 0 && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Projeté: {formatCurrency(product.projectedRevenue)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Profit</p>
+                    <div>
+                      <p
+                        className={`font-medium ${product.realizedProfit > 0 ? "text-green-600" : "text-red-500"}`}
+                      >
+                        {formatCurrency(product.realizedProfit)}
+                      </p>
+                      {/* Show potential recovery */}
+                      {product.currentStock > 0 &&
+                        product.unrealizedValue > 0 && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            +{formatCurrency(product.unrealizedValue)} en stock
+                          </p>
+                        )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Marge</p>
+                    <div>
+                      <span
+                        className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                          product.profitMargin > 30
+                            ? "bg-green-100 text-green-700"
+                            : product.profitMargin > 15
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {formatPercent(product.profitMargin)}
+                      </span>
+                      {/* Show projected margin if different */}
+                      {product.currentStock > 0 &&
+                        Math.abs(
+                          product.projectedMargin - product.profitMargin,
+                        ) > 1 && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatPercent(product.projectedMargin)} si tout
+                            vendu
+                          </p>
+                        )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Ventes</p>
+                    <p className="text-gray-900">
+                      {formatNumber(product.unitsSold)} /{" "}
+                      {formatNumber(product.initialStock)}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {formatPercent(product.realizationRate)} vendu
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Stock</p>
+                    <p
+                      className={
+                        product.currentStock < 10
+                          ? "text-red-600 font-medium"
+                          : "text-gray-900"
+                      }
+                    >
+                      {formatNumber(product.currentStock)}
+                    </p>
+                    {product.daysOfStockLeft !== Infinity && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        ~{Math.round(product.daysOfStockLeft)} jours restants
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-gray-500 text-xs mb-1">Efficacité</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-900 text-xs">
+                        {formatPercent(product.stockEfficiency)}
+                      </span>
+                      <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="bg-blue-600 rounded-full h-1.5"
+                          style={{
+                            width: `${Math.min(product.stockEfficiency, 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Desktop Table View */}
+          <table className="hidden md:table w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 text-gray-400 font-medium uppercase text-xs">
+                <th className="pb-2 font-semibold">Produit</th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("totalRevenue")}
+                >
+                  Chiffre d&apos;affaires{" "}
+                  {performanceSortField === "totalRevenue" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("realizedProfit")}
+                >
+                  Profit{" "}
+                  {performanceSortField === "realizedProfit" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("profitMargin")}
+                >
+                  Marge{" "}
+                  {performanceSortField === "profitMargin" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("unitsSold")}
+                >
+                  Ventes{" "}
+                  {performanceSortField === "unitsSold" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("currentStock")}
+                >
+                  Stock{" "}
+                  {performanceSortField === "currentStock" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("stockEfficiency")}
+                >
+                  Efficacité{" "}
+                  {performanceSortField === "stockEfficiency" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="pb-2 text-right font-semibold cursor-pointer hover:text-gray-600"
+                  onClick={() => handlePerformanceSort("performanceScore")}
+                >
+                  Score{" "}
+                  {performanceSortField === "performanceScore" &&
+                    (performanceSortDirection === "asc" ? "↑" : "↓")}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {sortedPerformance.map((product) => (
+                <tr key={product.productId} className="hover:bg-gray-50">
+                  {/* Product Name + Category */}
+                  <td className="py-3 font-medium text-gray-800">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {product.productName}
+                        <span className="text-xs text-gray-400">
+                          #{product.rankByRevenue}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full w-fit ${
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).color
+                        }`}
+                      >
+                        {
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).icon
+                        }{" "}
+                        {
+                          getPerformanceCategoryDisplay(
+                            product.performanceCategory,
+                          ).label
+                        }
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Revenue */}
+                  <td className="py-3 text-right font-medium text-gray-900">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span>{formatCurrency(product.totalRevenue)}</span>
+                      {product.unrealizedValue > 0 && (
+                        <span className="text-xs text-gray-400">
+                          +{formatCurrency(product.unrealizedValue)}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Profit */}
+                  <td className="py-3 text-right font-medium">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span
+                        className={
+                          product.realizedProfit > 0
+                            ? "text-green-600"
+                            : "text-red-500"
+                        }
+                      >
+                        {formatCurrency(product.realizedProfit)}
+                      </span>
+                      {product.currentStock > 0 &&
+                        product.projectedProfit !== product.realizedProfit && (
+                          <span className="text-xs text-gray-400">
+                            {formatCurrency(product.projectedProfit)}
+                          </span>
+                        )}
+                    </div>
+                  </td>
+
+                  {/* Margin */}
+                  <td className="py-3 text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          product.profitMargin > 30
+                            ? "bg-green-100 text-green-700"
+                            : product.profitMargin > 15
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        {formatPercent(product.profitMargin)}
+                      </span>
+                      {product.currentStock > 0 &&
+                        Math.abs(
+                          product.projectedMargin - product.profitMargin,
+                        ) > 1 && (
+                          <span className="text-xs text-gray-400">
+                            {formatPercent(product.projectedMargin)}
+                          </span>
+                        )}
+                    </div>
+                  </td>
+
+                  {/* Sales */}
+                  <td className="py-3 text-right text-gray-600">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span>{formatNumber(product.unitsSold)}</span>
+                      <span className="text-xs text-gray-400">
+                        sur {formatNumber(product.initialStock)} (
+                        {formatPercent(product.realizationRate)})
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Stock */}
+                  <td className="py-3 text-right">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span
+                        className={
+                          product.currentStock < 10
+                            ? "text-red-600 font-medium"
+                            : "text-gray-600"
+                        }
+                      >
+                        {formatNumber(product.currentStock)}
+                      </span>
+                      {product.daysOfStockLeft !== Infinity && (
+                        <span className="text-xs text-gray-400">
+                          ~{Math.round(product.daysOfStockLeft)}j
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Efficiency */}
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-gray-600">
+                        {formatPercent(product.stockEfficiency)}
+                      </span>
+                      <div className="w-12 bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="bg-blue-600 rounded-full h-1.5"
+                          style={{
+                            width: `${Math.min(product.stockEfficiency, 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Score */}
+                  <td className="py-3 text-right">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getPerformanceColor(product.performanceScore)}`}
+                    >
+                      {product.performanceScore}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
         {/* Expense Breakdown Section */}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📊</span>
             <h2 className="font-bold text-gray-800">
               {fr.analytics.expenseBreakdown}
             </h2>
@@ -169,54 +646,6 @@ export function Analytics({ onBack }: AnalyticsProps) {
           ) : (
             <div className="text-center py-8 text-gray-400 text-sm">
               <p>{fr.analytics.noExpenses}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Top Products Section */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">📈</span>
-            <h2 className="font-bold text-gray-800">
-              {fr.analytics.topProducts}
-            </h2>
-          </div>
-
-          {topProducts.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-gray-400 font-medium uppercase text-xs">
-                    <th className="pb-2 font-semibold">Produit</th>
-                    <th className="pb-2 text-right font-semibold">Ventes</th>
-                    <th className="pb-2 text-right font-semibold">Total</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {topProducts.map((p, idx) => (
-                    <tr key={p.item.id}>
-                      <td className="py-3 font-medium text-gray-800">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400 font-normal w-4">
-                            #{idx + 1}
-                          </span>
-                          {p.item.name}
-                        </div>
-                      </td>
-                      <td className="py-3 text-right text-gray-600">
-                        {p.unitsSold}
-                      </td>
-                      <td className="py-3 text-right font-bold text-gray-900">
-                        {p.totalRevenue.toLocaleString("fr-FR")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm">
-              <p>{fr.analytics.noProducts}</p>
             </div>
           )}
         </div>

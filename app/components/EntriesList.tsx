@@ -28,7 +28,8 @@ export function EntriesList({ onBack }: EntriesListProps) {
   });
 
   // Get entries directly from the data source, not from state
-  const entries = getEntriesForDate(selectedDate);
+  const entries = getEntriesForDate(selectedDate).reverse();
+  // const reversedEntries = entries
 
   const refreshStock = useCallback(() => {
     setStock(loadData().stock);
@@ -80,7 +81,7 @@ export function EntriesList({ onBack }: EntriesListProps) {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-white pb-18">
+    <div className="h-dvh flex flex-col bg-white pb-18 mb-6">
       {/* bg-gray-100 */}
       {/* Header */}
       <div className="bg-linear-to-b from-blue-50 to-white px-6 pt-6 pb-8 flex items-center gap-4">
@@ -110,17 +111,17 @@ export function EntriesList({ onBack }: EntriesListProps) {
 
         {/* Day Summary */}
         <div className="bg-linear-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col md:grid md:grid-cols-3 gap-4">
             <div>
               <p className="text-xs text-gray-600 font-semibold">Ventes</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {dayTotal.sales.toLocaleString("fr-FR")}
+                {dayTotal.sales.toLocaleString("fr-FR")} CFA
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-600 font-semibold">Dépenses</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {dayTotal.expenses.toLocaleString("fr-FR")}
+                {dayTotal.expenses.toLocaleString("fr-FR")} CFA
               </p>
             </div>
             <div>
@@ -134,7 +135,7 @@ export function EntriesList({ onBack }: EntriesListProps) {
                       : "text-gray-600"
                 }`}
               >
-                {dayProfit.toLocaleString("fr-FR")}
+                {dayProfit.toLocaleString("fr-FR")} CFA
               </p>
             </div>
           </div>
