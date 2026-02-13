@@ -4,6 +4,7 @@ import { fr } from "@/lib/i18n";
 import { loadData, saveData } from "@/lib/storage";
 import type { StockItem } from "@/types";
 import { useState } from "react";
+import PageWrapper from "./PageWrapper";
 
 interface StockManagementProps {
   onBack: () => void;
@@ -112,22 +113,8 @@ export function StockManagement({ onBack }: StockManagementProps) {
   const isLowStock = (item: StockItem) => item.quantity <= item.threshold;
 
   return (
-    <div className="h-dvh flex flex-col bg-white pb-18 mb-6">
-      {/* Header */}
-      <div className="bg-linear-to-b from-blue-50 to-white px-6 pt-6 pb-8 flex items-center gap-4">
-        {/* <button onClick={onBack} className="text-2xl">
-          ←
-        </button> */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {fr.stock.inventory}
-          </h1>
-          <p className="text-gray-600 text-sm">Gérez votre inventaire</p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 pb-4 overflow-auto px-6 space-y-6">
+    <PageWrapper header={<HeaderComponent />}>
+      <div className="flex-1 pb-4 overflow-auto space-y-6">
         {/* Add button */}
         <button
           onClick={() => {
@@ -138,14 +125,12 @@ export function StockManagement({ onBack }: StockManagementProps) {
         >
           + {fr.stock.addProduct}
         </button>
-
         {/* Add/Edit Form */}
         {showAddForm && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
             <h2 className="font-semibold text-gray-900 text-lg">
               {editingId ? "Modifier le produit" : "Ajouter un produit"}
             </h2>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Product Name */}
               <div>
@@ -160,7 +145,6 @@ export function StockManagement({ onBack }: StockManagementProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               {/* Quantity */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -175,7 +159,6 @@ export function StockManagement({ onBack }: StockManagementProps) {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               <div className="flex gap-4">
                 {/* Threshold */}
                 <div className="w-full">
@@ -192,14 +175,12 @@ export function StockManagement({ onBack }: StockManagementProps) {
                   />
                 </div>
               </div>
-
               {/* Error Message */}
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                   {error}
                 </div>
               )}
-
               {/* Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
@@ -219,7 +200,6 @@ export function StockManagement({ onBack }: StockManagementProps) {
             </form>
           </div>
         )}
-
         {/* Stock Items List */}
         {items.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -267,7 +247,6 @@ export function StockManagement({ onBack }: StockManagementProps) {
                     </div>
                   </div>
                 </div>
-
                 {/* Action Buttons */}
                 <div className="flex gap-2">
                   <button
@@ -292,6 +271,19 @@ export function StockManagement({ onBack }: StockManagementProps) {
           </div>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }
+
+// Define HeaderComponent outside with props
+const HeaderComponent: React.FC = () => {
+  return (
+    <div className="flex flex-col gap-2">
+      <h1 className="text-2xl font-bold text-gray-900">{fr.stock.inventory}</h1>
+      <p className="text-gray-600 text-sm">
+        Ajoutez ici les produits que vous vendez. Vous pouvez commencer avec 0
+        quantité!
+      </p>
+    </div>
+  );
+};

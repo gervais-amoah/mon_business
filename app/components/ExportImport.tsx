@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { loadData, saveData, clearData } from "@/lib/storage";
 import type { BusinessData } from "@/types";
 import { fr } from "@/lib/i18n";
+import PageWrapper from "./PageWrapper";
 
 interface ExportImportProps {
   onBack: () => void;
@@ -120,22 +121,9 @@ export function ExportImport({ onBack }: ExportImportProps) {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-white pb-18 mb-6">
-      {/* Header */}
-      <div className="bg-linear-to-b from-blue-50 to-white px-6 pt-6 pb-8 flex items-center gap-4">
-        {/* <button onClick={onBack} className="text-2xl">
-          ←
-        </button> */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {fr.settings.dataTitle}
-          </h1>
-          <p className="text-gray-600 text-sm">{fr.settings.dataSubtitle}</p>
-        </div>
-      </div>
-
+    <PageWrapper header={<HeaderComponent />}>
       {/* Content */}
-      <div className="flex-1 pb-4 overflow-auto px-6 space-y-6">
+      <div className="flex-1 pb-4 overflow-auto space-y-6">
         {/* Message */}
         {message && (
           <div
@@ -216,6 +204,18 @@ export function ExportImport({ onBack }: ExportImportProps) {
           </ul>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
+
+// Define HeaderComponent outside with props
+const HeaderComponent: React.FC = () => {
+  return (
+    <div className="flex flex-col gap-2">
+      <h1 className="text-2xl font-bold text-gray-900">
+        {fr.settings.dataTitle}
+      </h1>
+      <p className="text-gray-600 text-sm">{fr.settings.dataSubtitle}</p>
+    </div>
+  );
+};

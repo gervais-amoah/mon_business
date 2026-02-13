@@ -22,43 +22,6 @@ import { addOrUpdateEntry } from "@/lib/entries";
 import { Page } from "../page";
 import PageWrapper from "./PageWrapper";
 
-interface DashboardProps {
-  settings: BusinessSettings;
-  onNavigate: (page: Page) => void;
-}
-// Define HeaderComponent outside with props
-interface HeaderProps {
-  hasEntry: boolean;
-  userName: string;
-}
-
-// Header with greeting
-const HeaderComponent: React.FC<HeaderProps> = ({ hasEntry, userName }) => {
-  return (
-    <div className=" px-6 pt-6 pb-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">
-        {fr.dashboard.greeting}, {userName}! 👋
-      </h1>
-      {!hasEntry ? (
-        <div className="text-gray-600">
-          <p className="leading-5 mb-2.5">
-            Commençons à suivre votre business ensemble.
-          </p>
-
-          <p className="text-sm">
-            1️⃣ Ajoutez d’abord vos produits (ex. : pagnes, sacs, boissons) dans
-            l’onglet <strong>Stock</strong>. <br />
-            2️⃣ Ensuite, enregistrez vos premières ventes ou dépenses pour voir
-            votre tableau de bord s’animer !
-          </p>
-        </div>
-      ) : (
-        <p className="text-gray-600 text-sm">{fr.dashboard.subtitle}</p>
-      )}
-    </div>
-  );
-};
-
 export function Dashboard({ settings, onNavigate }: DashboardProps) {
   // Initialize with empty array, load in useEffect
   const [entries, setEntries] = useState<DailyEntry[]>([]);
@@ -129,9 +92,6 @@ export function Dashboard({ settings, onNavigate }: DashboardProps) {
     return fr.dashboard.trendStable;
   };
 
-  {
-    /* Main content */
-  }
   return (
     <PageWrapper
       header={
@@ -375,3 +335,39 @@ export function Dashboard({ settings, onNavigate }: DashboardProps) {
     </PageWrapper>
   );
 }
+
+interface DashboardProps {
+  settings: BusinessSettings;
+  onNavigate: (page: Page) => void;
+}
+// Define HeaderComponent outside with props
+interface HeaderProps {
+  hasEntry: boolean;
+  userName: string;
+}
+// Header with greeting
+const HeaderComponent: React.FC<HeaderProps> = ({ hasEntry, userName }) => {
+  return (
+    <>
+      <h1 className="text-2xl font-bold text-gray-900 mb-1">
+        {fr.dashboard.greeting}, {userName}! 👋
+      </h1>
+      {!hasEntry ? (
+        <div className="text-gray-600">
+          <p className="leading-5 mb-2.5">
+            Commençons à suivre votre business ensemble.
+          </p>
+
+          <p className="text-sm">
+            1️⃣ Ajoutez d’abord vos produits (ex. : pagnes, sacs, boissons) dans
+            l’onglet <strong>Stock</strong>. <br />
+            2️⃣ Ensuite, enregistrez vos premières ventes ou dépenses pour voir
+            votre tableau de bord s’animer !
+          </p>
+        </div>
+      ) : (
+        <p className="text-gray-600 text-sm">{fr.dashboard.subtitle}</p>
+      )}
+    </>
+  );
+};

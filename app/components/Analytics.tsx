@@ -10,6 +10,7 @@ import type { DailyEntry, StockItem } from "@/types";
 import { ProductPerformance } from "@/types/performance";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import PageWrapper from "./PageWrapper";
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -141,26 +142,9 @@ export function Analytics({ onBack }: AnalyticsProps) {
   };
 
   return (
-    <div className="h-dvh flex flex-col bg-white pb-18 mb-6">
+    <PageWrapper header={<HeaderComponent onBack={onBack} />}>
       {/* Header */}
-      <div className="bg-white px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 z-10">
-        <div className="flex items-center mb-4">
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <Image
-              src="/img/back_arrow.png"
-              width={30}
-              height={30}
-              alt="Go back"
-            />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">
-            {fr.analytics.title}
-          </h1>
-        </div>
-
+      <div className="bg-white px-6 py-4 -mt-4 rounded-xl border border-gray-300 sticky -top-6 z-10">
         {/* Filter Tabs */}
         <div className="flex bg-gray-100 p-1 rounded-lg">
           {(["today", "week", "month", "all"] as const).map((f) => (
@@ -182,7 +166,7 @@ export function Analytics({ onBack }: AnalyticsProps) {
         </div>
       </div>
 
-      <div className="flex-1 pb-4 overflow-auto px-6 space-y-6">
+      <div className="flex-1 pb-4 overflow-auto space-y-6">
         {/* Performance Summary Cards */}
         {productPerformance.products.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -663,6 +647,24 @@ export function Analytics({ onBack }: AnalyticsProps) {
           </p>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
+
+// Define HeaderComponent outside with props
+interface HeaderProps {
+  onBack: () => void;
+}
+const HeaderComponent: React.FC<HeaderProps> = ({ onBack }) => {
+  return (
+    <div className="flex items-center mb-4">
+      <button
+        onClick={onBack}
+        className="p-2 -ml-2 text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+      >
+        <Image src="/img/back_arrow.png" width={30} height={30} alt="Go back" />
+      </button>
+      <h1 className="text-xl font-bold text-gray-900">{fr.analytics.title}</h1>
+    </div>
+  );
+};
