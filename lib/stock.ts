@@ -3,7 +3,7 @@
  * Functions for tracking inventory, detecting low stock, and calculating top sellers
  */
 
-import type { StockItem, DailyEntry, SaleLineItem } from "@/types";
+import type { StockItem, DailyEntry } from "@/types";
 
 /**
  * Update stock item quantity after a sale
@@ -43,7 +43,7 @@ export function applyEntryToStock(
 
   if (itemIndex >= 0) {
     const item = updatedItems[itemIndex];
-    const currentRevenue = item.totalSold * (item.unitPrice || 0);
+    const currentRevenue = item.totalSold * (item.unitSellingPrice || 0);
     const newRevenue = currentRevenue + entry.amount;
     const newTotalSold = item.totalSold + entry.quantity;
     const newAveragePrice = newTotalSold > 0 ? newRevenue / newTotalSold : 0;
@@ -52,7 +52,7 @@ export function applyEntryToStock(
       ...item,
       quantity: Math.max(0, item.quantity - entry.quantity),
       totalSold: newTotalSold,
-      unitPrice: Math.round(newAveragePrice),
+      unitSellingPrice: Math.round(newAveragePrice),
     };
   }
 
@@ -154,17 +154,6 @@ export function getTopRevenueProducts(
     })
     .sort((a, b) => b.totalRevenue - a.totalRevenue)
     .slice(0, limit);
-}
-
-/**
- * Get inventory value (quantity * estimated unit price or cost)
- * Returns total value across all stock
- */
-export function getInventoryValue(stockItems: StockItem[]): number {
-  return stockItems.reduce((total, item) => {
-    const unitPrice = item.unitPrice || 0;
-    return total + item.quantity * unitPrice;
-  }, 0);
 }
 
 /**

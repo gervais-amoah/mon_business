@@ -62,7 +62,7 @@ export const fr = {
     addExpense: "Ajouter une dépense",
     selectProduct: "Sélectionner un produit",
     quantity: "Quantité",
-    unitPrice: "Prix unitaire",
+    sellingUnitPrice: "Prix unitaire",
     total: "Total",
     expenseCategory: "Catégorie de dépense",
     addLineItem: "+ Ajouter",
@@ -76,6 +76,7 @@ export const fr = {
     subtitle: "Retrouvez ici tous les produits que vous vendez.",
     addProduct: "Ajouter un produit",
     productName: "Nom du produit",
+    sellingPrice: "Prix de vente",
     quantity: "Quantité",
     threshold: "Seuil d'alerte",
     lowStockAlert: "Stock faible",
@@ -83,7 +84,7 @@ export const fr = {
     edit: "Modifier",
     delete: "Supprimer",
     totalSold: "Total vendu",
-    unitPrice: "Prix unitaire (optionnel)",
+    unitSellingPrice: "Prix unitaire de vente",
   },
 
   // Navigation

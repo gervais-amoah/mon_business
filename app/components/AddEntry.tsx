@@ -4,7 +4,7 @@ import { fr } from "@/lib/i18n";
 import type { DailyEntry, ExpenseCategory, StockItem } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/types";
 import { loadData } from "@/lib/storage";
-import { useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 
 interface AddEntryProps {
   existingEntry?: DailyEntry;
@@ -34,7 +34,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
     existingEntry?.productId || "",
   );
   const [quantity, setQuantity] = useState(
-    existingEntry?.quantity?.toString() || "",
+    existingEntry?.quantity?.toString() || "1",
   );
   const [amount, setAmount] = useState(existingEntry?.amount?.toString() || "");
 
@@ -45,10 +45,45 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
 
   // Load stock for product dropdown
   const [stock, setStock] = useState<StockItem[]>(() => loadData().stock);
+  const baseItems = [...stock]; // copy to avoid mutation
+  const sortedStock = baseItems.sort((a, b) =>
+    a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+  );
 
   // Constants
   const isStockExpense =
     entryType === "EXPENSE" && selectedCategory === "Stock";
+
+  const getProductDefaultSellingPrice = () => {
+    if (!selectedProductId) {
+      return "";
+    }
+
+    const product = stock.find((p) => p.id === selectedProductId);
+    if (!product) return "";
+
+    const usp = product?.unitSellingPrice;
+    const qty = parseInt(quantity) > 0 ? parseInt(quantity) : 1;
+
+    return `${qty * usp}`;
+  };
+  const getProductUnitSellingPrice = () => {
+    if (!selectedProductId) {
+      setError(fr.entry.selectProduct);
+      return 0;
+    }
+
+    const product = stock.find((p) => p.id === selectedProductId);
+    if (!product) return 0;
+
+    return product?.unitSellingPrice || 0;
+  };
+
+  const handleSelectProductForSell = (
+    e: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
+  ) => {
+    setSelectedProductId(e.target.value);
+  };
 
   const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -60,10 +95,12 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
     }
 
     const qty = parseInt(quantity, 10);
-    const totalAmount = parseInt(amount, 10);
+    const totalAmount = parseInt(amount || getProductDefaultSellingPrice(), 10);
 
     if (isNaN(totalAmount) || totalAmount < 0) {
-      setError("Veuillez entrer un montant valide");
+      setError(
+        `Veuillez entrer un montant valide, ${totalAmount}, ${getProductDefaultSellingPrice()}`,
+      );
       return;
     }
 
@@ -200,11 +237,11 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                 <select
                   id="product"
                   value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
+                  onChange={handleSelectProductForSell}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">-- {fr.entry.selectProduct} --</option>
-                  {stock.map((product) => (
+                  {sortedStock.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} ({product.quantity} en stock)
                     </option>
@@ -240,7 +277,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                   <input
                     id="amount"
                     type="number"
-                    value={amount}
+                    value={amount || getProductDefaultSellingPrice()}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
                     min="0"
@@ -250,13 +287,10 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
               </div>
 
               {/* Computed Unit Price Preview */}
-              {parseInt(amount) > 0 && parseInt(quantity) > 0 && (
+              {selectedProductId && (
                 <div className="text-sm text-gray-600 text-right">
-                  Prix unitaire:{" "}
-                  {(parseInt(amount) / parseInt(quantity)).toLocaleString(
-                    "fr-FR",
-                  )}{" "}
-                  CFA
+                  {fr.entry.sellingUnitPrice}:{" "}
+                  {getProductUnitSellingPrice().toLocaleString("fr-FR")} CFA
                 </div>
               )}
             </div>
@@ -307,7 +341,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">-- Choisir le produit --</option>
-                      {stock.map((product) => (
+                      {sortedStock.map((product) => (
                         <option key={product.id} value={product.id}>
                           {product.name} (Actuel: {product.quantity})
                         </option>

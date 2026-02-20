@@ -79,17 +79,12 @@ function applyStockChange(stock: StockItem[], entry: DailyEntry) {
       if (entry.type === "SALE") {
         // Sale: Decrease stock, increase total sold
         // Update weighted average price calculation
-        const currentRevenue = item.totalSold * (item.unitPrice || 0);
-        const newRevenue = currentRevenue + entry.amount;
         const newTotalSold = item.totalSold + entry.quantity;
-        const newAveragePrice =
-          newTotalSold > 0 ? newRevenue / newTotalSold : 0;
 
         stock[itemIndex] = {
           ...item,
           quantity: Math.max(0, item.quantity - entry.quantity),
           totalSold: newTotalSold,
-          unitPrice: Math.round(newAveragePrice),
         };
       } else if (entry.type === "EXPENSE" && entry.category === "Stock") {
         // Stock Expense: Increase stock
@@ -108,7 +103,7 @@ function revertStockChange(stock: StockItem[], entry: DailyEntry) {
     if (itemIndex >= 0) {
       if (entry.type === "SALE") {
         // Undo Sale: Increase stock, decrease total sold
-        // Note: We don't revert unitPrice average perfectly as it's complex,
+        // Note: We don't revert unitSellingPrice average perfectly as it's complex,
         // we just revert the counts.
         stock[itemIndex].quantity += entry.quantity;
         stock[itemIndex].totalSold = Math.max(

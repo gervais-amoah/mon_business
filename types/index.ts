@@ -22,17 +22,6 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
 ];
 
 /**
- * Single product sale line item
- * Supports product-based sales with automatic stock deduction
- */
-export interface SaleLineItem {
-  productId: string; // Reference to stock item
-  quantity: number; // Units sold
-  unitPrice?: number; // Price per unit (for reference/validation)
-  total: number; // Total amount for this line (quantity * unitPrice or explicit total)
-}
-
-/**
  * Single expense line item
  * Each expense is categorized for analytics
  */
@@ -72,7 +61,7 @@ export interface StockItem {
   quantity: number; // Current stock level
   threshold: number; // Alert threshold
   totalSold: number; // Cumulative units sold (for analytics)
-  unitPrice?: number; // Optional: unit cost/price
+  unitSellingPrice: number; // Optional: unit cost/price
   hasInitialStockTransaction: boolean; // True once the first stocking purchase has been recorded
 
   [key: string]: string | number | boolean | undefined; //  For export

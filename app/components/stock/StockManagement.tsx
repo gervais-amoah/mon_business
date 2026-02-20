@@ -28,12 +28,14 @@ export interface StockFormData {
   name: string;
   quantity: string;
   threshold: string;
+  unitSellingPrice: string;
 }
 
 export interface InitialStockFormData {
   qty: string;
   amount: string;
   date: string;
+  unitSellingPrice: string;
 }
 
 // ─────────────────────────────────────────────
@@ -44,7 +46,12 @@ function generateItemId(): string {
   return `stock_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-const EMPTY_FORM: StockFormData = { name: "", quantity: "0", threshold: "" };
+const EMPTY_FORM: StockFormData = {
+  name: "",
+  quantity: "0",
+  threshold: "",
+  unitSellingPrice: "",
+};
 
 // ─────────────────────────────────────────────
 // Main Component
@@ -70,6 +77,7 @@ export function StockManagement({ onBack }: StockManagementProps) {
   const [initialForm, setInitialForm] = useState<InitialStockFormData>({
     qty: "",
     amount: "",
+    unitSellingPrice: "",
     date: new Date().toISOString().split("T")[0],
   });
   const [initialError, setInitialError] = useState("");
@@ -132,8 +140,19 @@ export function StockManagement({ onBack }: StockManagementProps) {
         formData.quantity === "" ? 0 : parseInt(formData.quantity, 10);
       const thresh =
         formData.threshold === "" ? 0 : parseInt(formData.threshold, 10);
+      const unitSellingPrice =
+        formData.unitSellingPrice === ""
+          ? 0
+          : parseInt(formData.unitSellingPrice, 10);
 
-      if (isNaN(qty) || isNaN(thresh) || qty < 0 || thresh < 0) {
+      if (
+        isNaN(qty) ||
+        qty < 0 ||
+        isNaN(thresh) ||
+        thresh < 0 ||
+        isNaN(unitSellingPrice) ||
+        unitSellingPrice < 0
+      ) {
         setFormError("Veuillez entrer des nombres valides");
         return;
       }
@@ -148,7 +167,7 @@ export function StockManagement({ onBack }: StockManagementProps) {
         name: formData.name.trim(),
         quantity: qty,
         threshold: thresh,
-        unitPrice: currentItem?.unitPrice ?? 0,
+        unitSellingPrice: unitSellingPrice,
         totalSold: currentItem?.totalSold ?? 0,
         hasInitialStockTransaction:
           currentItem?.hasInitialStockTransaction ?? false,
@@ -175,6 +194,7 @@ export function StockManagement({ onBack }: StockManagementProps) {
       name: item.name,
       quantity: item.quantity.toString(),
       threshold: item.threshold.toString(),
+      unitSellingPrice: item.unitSellingPrice.toString(),
     });
     setShowAddForm(true);
   }, []);
@@ -229,6 +249,7 @@ export function StockManagement({ onBack }: StockManagementProps) {
     setInitialForm({
       qty: "",
       amount: "",
+      unitSellingPrice: "",
       date: new Date().toISOString().split("T")[0],
     });
     refreshStock();
