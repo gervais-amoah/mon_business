@@ -6,7 +6,7 @@ import { loadData } from "@/lib/storage";
 import { fr } from "@/lib/i18n";
 import { Onboarding } from "./components/Onboarding";
 import { Dashboard } from "./components/Dashboard";
-import { StockManagement } from "./components/StockManagement";
+import { StockManagement } from "./components/stock/StockManagement";
 import { EntriesList } from "./components/EntriesList";
 import { ExportImport } from "./components/ExportImport";
 import { InstallBanner } from "./components/InstallBanner";

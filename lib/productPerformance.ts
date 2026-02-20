@@ -12,11 +12,7 @@ export const calculateProductPerformance = ({
   entries,
   stockItems,
   daysToAnalyze = 30,
-}: {
-  entries: DailyEntry[];
-  stockItems: StockItem[];
-  daysToAnalyze?: number;
-}) => {
+}: PerformanceCalculatorProps) => {
   // Group sales AND purchases by product
   const dataByProduct = new Map<
     string,

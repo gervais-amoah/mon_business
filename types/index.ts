@@ -71,6 +71,7 @@ export interface StockItem {
   threshold: number; // Alert threshold
   totalSold: number; // Cumulative units sold (for analytics)
   unitPrice?: number; // Optional: unit cost/price
+  hasInitialStockTransaction: boolean; // True once the first stocking purchase has been recorded
 }
 
 export interface BusinessSettings {

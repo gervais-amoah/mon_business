@@ -50,7 +50,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
   const isStockExpense =
     entryType === "EXPENSE" && selectedCategory === "Stock";
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     setError("");
 
