@@ -152,7 +152,7 @@ export const StockForm: React.FC<StockFormProps> = ({
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            {fr.stock.unitSellingPrice} $
+            {fr.stock.unitSellingPrice}
           </label>
           <input
             type="number"
