@@ -57,7 +57,7 @@ export const StockCard: React.FC<StockCardProps> = ({
         </div>
       </div>
 
-      <div className="text-xs text-gray-500">
+      <div className="hidden text-xs text-gray-500">
         <p>[unitSellingPrice]: {JSON.stringify(item.unitSellingPrice)}</p>
         <p>[unitPrice]: {JSON.stringify(item.unitPrice)}</p>
       </div>
