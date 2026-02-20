@@ -212,10 +212,11 @@ export function StockManagement({ onBack }: StockManagementProps) {
     if (!initialStockItem) return;
     setInitialError("");
 
-    const qty = parseInt(initialForm.qty, 10);
+    const qty = parseInt(initialForm.qty, 10) || 0;
     const amount = parseFloat(initialForm.amount);
 
-    if (isNaN(qty) || qty <= 0 || isNaN(amount) || amount <= 0) {
+    //  TODO: AFTER USER UPDATE STOCK, QTY <= 0
+    if (isNaN(qty) || qty < 0 || isNaN(amount) || amount <= 0) {
       setInitialError("Veuillez entrer des valeurs valides");
       return;
     }

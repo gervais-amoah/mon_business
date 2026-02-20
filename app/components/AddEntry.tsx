@@ -1,10 +1,11 @@
 "use client";
 
 import { fr } from "@/lib/i18n";
+import { loadData } from "@/lib/storage";
 import type { DailyEntry, ExpenseCategory, StockItem } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/types";
-import { loadData } from "@/lib/storage";
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useState } from "react";
+import { ProductPicker } from "./entries/ProductPicker";
 
 interface AddEntryProps {
   existingEntry?: DailyEntry;
@@ -45,7 +46,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
 
   // Load stock for product dropdown
   const [stock, setStock] = useState<StockItem[]>(() => loadData().stock);
-  const baseItems = [...stock]; // copy to avoid mutation
+  const baseItems = [...loadData().stock]; // copy to avoid mutation
   const sortedStock = baseItems.sort((a, b) =>
     a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
   );
@@ -59,7 +60,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
       return "";
     }
 
-    const product = stock.find((p) => p.id === selectedProductId);
+    const product = baseItems.find((p) => p.id === selectedProductId);
     if (!product) return "";
 
     const usp = product?.unitSellingPrice;
@@ -73,7 +74,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
       return 0;
     }
 
-    const product = stock.find((p) => p.id === selectedProductId);
+    const product = baseItems.find((p) => p.id === selectedProductId);
     if (!product) return 0;
 
     return product?.unitSellingPrice || 0;
@@ -116,7 +117,7 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
       }
 
       if (entryType === "SALE") {
-        const product = stock.find((p) => p.id === selectedProductId);
+        const product = baseItems.find((p) => p.id === selectedProductId);
         if (!product) {
           setError("Produit non trouvé");
           return;
@@ -227,27 +228,10 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
           {/* SALE FORM */}
           {entryType === "SALE" && (
             <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="product"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
-                  {fr.entry.selectProduct}
-                </label>
-                <select
-                  id="product"
-                  value={selectedProductId}
-                  onChange={handleSelectProductForSell}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">-- {fr.entry.selectProduct} --</option>
-                  {sortedStock.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} ({product.quantity} en stock)
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ProductPicker
+                onSelect={(id) => setSelectedProductId(id)}
+                products={sortedStock}
+              />
 
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -327,27 +311,12 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
                   <p className="text-sm text-orange-800 font-medium mb-2">
                     Réapprovisionnement de Stock
                   </p>
-                  <div>
-                    <label
-                      htmlFor="stockProduct"
-                      className="block text-sm font-semibold text-gray-700 mb-2"
-                    >
-                      Produit
-                    </label>
-                    <select
-                      id="stockProduct"
-                      value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">-- Choisir le produit --</option>
-                      {sortedStock.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} (Actuel: {product.quantity})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+
+                  <ProductPicker
+                    onSelect={(id) => setSelectedProductId(id)}
+                    products={sortedStock}
+                  />
+
                   <div>
                     <label
                       htmlFor="stockQty"
