@@ -8,10 +8,10 @@ import type {
   SaleLineItemInput,
   StockItem,
 } from "@/types";
-import { EXPENSE_CATEGORIES } from "@/types";
 import { useState } from "react";
-import { SaleForm } from "./SaleForm";
 import { ExpenseForm } from "./ExpenseForm";
+import { SaleForm } from "./SaleForm";
+import ModalView from "../common/ModalView";
 
 interface AddEntryProps {
   existingEntry?: DailyEntry;
@@ -222,115 +222,113 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50 mb-0">
-      <div className="w-full bg-white rounded-t-2xl p-6 pb-10 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
-            {existingEntry ? "Modifier l'entrée" : fr.entry.addEntry}
-          </h2>
-          <button
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700 text-2xl font-light"
+    <ModalView>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900">
+          {existingEntry ? "Modifier l'entrée" : fr.entry.addEntry}
+        </h2>
+        <button
+          onClick={onCancel}
+          className="text-gray-500 hover:text-gray-700 text-2xl font-light"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label
+            htmlFor="date"
+            className="block text-sm font-semibold text-gray-700 mb-2"
           >
-            ✕
+            {fr.entry.date}
+          </label>
+          <input
+            id="date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+          />
+        </div>
+
+        <div className="flex gap-2 border-b border-gray-200">
+          <button
+            type="button"
+            onClick={() => {
+              setEntryType("SALE");
+              setError("");
+            }}
+            className={`flex-1 px-4 py-3 font-semibold transition-colors ${entryType === "SALE" ? "border-b-2 border-[#60b8c0] text-[#60b8c0]" : "text-gray-600 hover:text-gray-900"}`}
+          >
+            {fr.entry.addSale}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEntryType("EXPENSE");
+              setError("");
+            }}
+            className={`flex-1 px-4 py-3 font-semibold transition-colors ${entryType === "EXPENSE" ? "border-b-2 border-[#60b8c0] text-[#60b8c0]" : "text-gray-600 hover:text-gray-900"}`}
+          >
+            {fr.entry.addExpense}
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="date"
-              className="block text-sm font-semibold text-gray-700 mb-2"
-            >
-              {fr.entry.date}
-            </label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-            />
+        {entryType === "SALE" && (
+          <SaleForm
+            existingEntry={existingEntry}
+            selectedProductId={selectedProductId}
+            setSelectedProductId={setSelectedProductId}
+            quantity={quantity}
+            setQuantity={setQuantity}
+            amount={amount}
+            setAmount={setAmount}
+            lineItems={lineItems}
+            addLineItem={addLineItem}
+            removeLineItem={removeLineItem}
+            updateLineItem={updateLineItem}
+            sortedStock={sortedStock}
+            getProductDefaultSellingPrice={getProductDefaultSellingPrice}
+            getProductUnitSellingPrice={getProductUnitSellingPrice}
+          />
+        )}
+
+        {entryType === "EXPENSE" && (
+          <ExpenseForm
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            setSelectedProductId={setSelectedProductId}
+            quantity={quantity}
+            setQuantity={setQuantity}
+            amount={amount}
+            setAmount={setAmount}
+            sortedStock={sortedStock}
+          />
+        )}
+
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
           </div>
+        )}
 
-          <div className="flex gap-2 border-b border-gray-200">
-            <button
-              type="button"
-              onClick={() => {
-                setEntryType("SALE");
-                setError("");
-              }}
-              className={`flex-1 px-4 py-3 font-semibold transition-colors ${entryType === "SALE" ? "border-b-2 border-[#60b8c0] text-[#60b8c0]" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              {fr.entry.addSale}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEntryType("EXPENSE");
-                setError("");
-              }}
-              className={`flex-1 px-4 py-3 font-semibold transition-colors ${entryType === "EXPENSE" ? "border-b-2 border-[#60b8c0] text-[#60b8c0]" : "text-gray-600 hover:text-gray-900"}`}
-            >
-              {fr.entry.addExpense}
-            </button>
-          </div>
-
-          {entryType === "SALE" && (
-            <SaleForm
-              existingEntry={existingEntry}
-              selectedProductId={selectedProductId}
-              setSelectedProductId={setSelectedProductId}
-              quantity={quantity}
-              setQuantity={setQuantity}
-              amount={amount}
-              setAmount={setAmount}
-              lineItems={lineItems}
-              addLineItem={addLineItem}
-              removeLineItem={removeLineItem}
-              updateLineItem={updateLineItem}
-              sortedStock={sortedStock}
-              getProductDefaultSellingPrice={getProductDefaultSellingPrice}
-              getProductUnitSellingPrice={getProductUnitSellingPrice}
-            />
-          )}
-
-          {entryType === "EXPENSE" && (
-            <ExpenseForm
-              selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
-              setSelectedProductId={setSelectedProductId}
-              quantity={quantity}
-              setQuantity={setQuantity}
-              amount={amount}
-              setAmount={setAmount}
-              sortedStock={sortedStock}
-            />
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {fr.common.cancel}
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-3 bg-[#60b8c0] hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              {existingEntry ? "Mettre à jour" : fr.entry.save}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            {fr.common.cancel}
+          </button>
+          <button
+            type="submit"
+            className="flex-1 py-3 bg-[#60b8c0] hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+          >
+            {existingEntry ? "Mettre à jour" : fr.entry.save}
+          </button>
+        </div>
+      </form>
+    </ModalView>
   );
 }
