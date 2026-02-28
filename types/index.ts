@@ -10,6 +10,8 @@ export type ExpenseCategory =
   | "Loyer"
   | "Salaire"
   | "Internet"
+  | "Electricity"
+  | "Epargne"
   | "Autre";
 
 export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
@@ -18,6 +20,8 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   "Loyer",
   "Salaire",
   "Internet",
+  "Electricity",
+  "Epargne",
   "Autre",
 ];
 

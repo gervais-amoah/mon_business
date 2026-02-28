@@ -2,9 +2,9 @@
 
 import { fr } from "@/lib/i18n";
 import { loadData } from "@/lib/storage";
-import type { DailyEntry, ExpenseCategory, StockItem } from "@/types";
+import type { DailyEntry, ExpenseCategory } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/types";
-import { ChangeEvent, useState } from "react";
+import { useState } from "react";
 import { ProductPicker } from "./entries/ProductPicker";
 
 interface AddEntryProps {
@@ -45,7 +45,6 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
   );
 
   // Load stock for product dropdown
-  const [stock, setStock] = useState<StockItem[]>(() => loadData().stock);
   const baseItems = [...loadData().stock]; // copy to avoid mutation
   const sortedStock = baseItems.sort((a, b) =>
     a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
@@ -78,12 +77,6 @@ export function AddEntry({ existingEntry, onSave, onCancel }: AddEntryProps) {
     if (!product) return 0;
 
     return product?.unitSellingPrice || 0;
-  };
-
-  const handleSelectProductForSell = (
-    e: ChangeEvent<HTMLSelectElement, HTMLSelectElement>,
-  ) => {
-    setSelectedProductId(e.target.value);
   };
 
   const handleSubmit = (e: React.SubmitEvent) => {

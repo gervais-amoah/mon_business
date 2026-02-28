@@ -177,6 +177,8 @@ export const fr = {
     Loyer: "Loyer",
     Salaire: "Salaire",
     Internet: "Internet",
+    Electricity: "Électricité",
+    Epargne: "Épargne",
     Autre: "Autre",
   },
 
