@@ -5,6 +5,7 @@ import {
   deleteEntry,
   getEntriesForMonth,
 } from "@/lib/entries";
+import { groupEntriesByDay } from "@/lib/entryHelpers";
 import { fr } from "@/lib/i18n";
 import { loadData } from "@/lib/storage";
 import type { DailyEntry, ExpenseCategory, StockItem } from "@/types";
@@ -19,30 +20,8 @@ interface EntriesListProps {
   onBack: () => void;
 }
 
-type EntriesByDay = Record<string, DailyEntry[]>;
-
 // Type pour le filtre
 type EntryFilter = "ALL" | "SALE" | "EXPENSE";
-
-function groupEntriesByDay(entries: DailyEntry[]): EntriesByDay {
-  const grouped: EntriesByDay = {};
-  for (const entry of entries) {
-    const key = entry.date;
-    if (!grouped[key]) {
-      grouped[key] = [];
-    }
-    grouped[key].push(entry);
-  }
-  for (const key in grouped) {
-    grouped[key].sort((a, b) => {
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-  }
-  const sortedEntries = Object.entries(grouped).sort(([dateA], [dateB]) => {
-    return dateB.localeCompare(dateA);
-  });
-  return Object.fromEntries(sortedEntries);
-}
 
 function getMonthValue(date: Date): string {
   return date.toISOString().slice(0, 7);
@@ -79,6 +58,13 @@ export function EntriesList({ onBack }: EntriesListProps) {
     return fr.expenseCategories[cat as ExpenseCategory] ?? cat;
   }, []);
 
+  /*
+   * NOTE: Ideally `getEntriesForMonth(selectedMonth)` exists in the data layer.
+   * But we can derive it from `getEntriesForDate` by iterating days,
+   * or filter all entries by month prefix here. Keeping data-fetching logic
+   * OUT of the component is the right boundary — components shouldn't know
+   * how data is stored.
+   */
   const allEntries = getEntriesForMonth(selectedMonth);
 
   // Filtrer les entrées selon le filtre sélectionné
