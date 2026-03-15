@@ -67,3 +67,28 @@ export function getTotalSalesInRange(entries: DailyEntry[]): number {
 export function getTotalExpensesInRange(entries: DailyEntry[]): number {
   return entries.reduce((sum, entry) => sum + getExpensesCompat(entry), 0);
 }
+
+type EntriesByDay = Record<string, DailyEntry[]>;
+/**
+ * Groups a flat list of entries by their calendar day.
+ * Returns days in reverse-chronological order (most recent first).
+ */
+export function groupEntriesByDay(entries: DailyEntry[]): EntriesByDay {
+  const grouped: EntriesByDay = {};
+  for (const entry of entries) {
+    const key = entry.date;
+    if (!grouped[key]) {
+      grouped[key] = [];
+    }
+    grouped[key].push(entry);
+  }
+  for (const key in grouped) {
+    grouped[key].sort((a, b) => {
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+  }
+  const sortedEntries = Object.entries(grouped).sort(([dateA], [dateB]) => {
+    return dateB.localeCompare(dateA);
+  });
+  return Object.fromEntries(sortedEntries);
+}
