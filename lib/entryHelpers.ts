@@ -72,11 +72,6 @@ type EntriesByDay = Record<string, DailyEntry[]>;
 /**
  * Groups a flat list of entries by their calendar day.
  * Returns days in reverse-chronological order (most recent first).
- *
- * WHY NOT in a useEffect + setState?
- * Because this is derived data — it can always be computed from `entries`.
- * Storing it in state would mean keeping two things in sync, which is a
- * classic source of stale-data bugs.
  */
 export function groupEntriesByDay(entries: DailyEntry[]): EntriesByDay {
   const grouped: EntriesByDay = {};
